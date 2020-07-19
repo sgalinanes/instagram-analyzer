@@ -8,6 +8,7 @@ export function getData() {
 }
 
 //TODO: Check what happens when timestamp periods < 1 day!
+//TODO: Check that last day updated data is re-updated (half-days issue)
 async function getInsights(lastUpdatedTimestamp) {
     const insights = config.instagramConfiguration.insights;
     const updateDateStream = fs.createWriteStream('update-insights.txt', {flags: 'w'});
@@ -80,7 +81,7 @@ async function getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, per
                 writeOnlineFollowers(stream, historicValues);
             } else {
                 historicValues.forEach(historicValue => {
-                    stream.write(historicValue.end_time + ',' + historicValue.value + '\n');
+                    stream.write(historicValue.end_time.slice(0, 10) + ',' + historicValue.value + '\n');
                 })
             }
         }
@@ -99,7 +100,7 @@ function writeOnlineFollowers(stream, historicValues) {
             hourValues.push(historicValue.value[i.toString()])
         }
         const hourValuesCsv = hourValues.join(", ")
-        stream.write(historicValue.end_time + ',' + hourValuesCsv + '\n');
+        stream.write(historicValue.end_time.slice(0, 10) + ',' + hourValuesCsv + '\n');
     })
 }
 
