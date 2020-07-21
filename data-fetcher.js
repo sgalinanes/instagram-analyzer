@@ -29,7 +29,10 @@ async function getInsights(lastUpdatedTimestamp) {
                 console.error(err.response)
         } 
     });
-    updateDateStream.write((Date.now() / 1000).toFixed(0));
+    const TIMESTAMP_DAY = 86400;
+    const currentTime = parseInt((Date.now() / 1000).toFixed(0))
+    const timeStamp = currentTime - TIMESTAMP_DAY
+    updateDateStream.write(timeStamp.toString());
     updateDateStream.end();
 }
 
@@ -52,24 +55,37 @@ async function getAperiodicInsight(instagramId, metric, period) {
 }
 
 async function getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, period) {
+    // Update from lastUpdatedTimestamp to currentDay - 1.
+    // This way you avoid daily "half-updates".
+    // 22/07/2020 -> 21/07/2020 ; 20/07/2020
+    const TIMESTAMP_DAY = 86400;
     const rangeLimit = 2592000;
+
+    // Calculate current date and set update limit until today at 00:00:00
+    const currentTime = parseInt((Date.now() / 1000).toFixed(0))
+    const currentDay = new Date(currentTime * 1000);
+    currentDay.setHours(0); currentDay.setMinutes(0); currentDay.setSeconds(0);
+    const timeLimit = currentDay;
+    console.log(timeLimit)
+    //
+
     const stream = fs.createWriteStream('data/' + metric + ".csv", {flags: 'a'});
     try {
         let timestampRanges = []
-        const currentTime = parseInt((Date.now() / 1000).toFixed(0))
         let from = parseInt(lastUpdatedTimestamp)
         let to = null
-        while(from < currentTime) {
+        while(from < timeLimit) {
             to = from + rangeLimit-1; 
             timestampRanges.push({from: from, to: to});
             from = to + 1;
         }
-    
+        
+        console.log(timestampRanges)
         for(let timestampRange of timestampRanges) {
-            if(timestampRange.to > currentTime) {
-                timestampRange.to = currentTime;
+            if(timestampRange.to > (timeLimit)) {
+                timestampRange.to = timeLimit;
             }
-    
+            
             let response = await axios.get(config.FACEBOOK_GRAPH_API + instagramId + 
                 '/insights?metric='+metric+'&period='+period+'&since='+timestampRange.from+'&until='+timestampRange.to+'&access_token=' + config.instagramConfiguration.app.longLivedToken);
             
