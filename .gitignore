@@ -3,3 +3,4 @@ data
 *.sh
 config.js
 analysis
+.vscode
