@@ -1,23 +1,46 @@
 function importData() {
-  var fSource = DriveApp.getFolderById(reports_folder_id); // reports_folder_id = id of folder where csv reports are saved
-  var fi = fSource.getFilesByName('report.csv'); // latest report file
-  var ss = SpreadsheetApp.openById(data_sheet_id); // data_sheet_id = id of spreadsheet that holds the data to be updated with new report data
-
-  if ( fi.hasNext() ) { // proceed if "report.csv" file exists in the reports folder
-    var file = fi.next();
-    var csv = file.getBlob().getDataAsString();
-    var csvData = CSVToArray(csv); // see below for CSVToArray function
-    var newsheet = ss.insertSheet('NEWDATA'); // create a 'NEWDATA' sheet to store imported data
-    // loop through csv data array and insert (append) as rows into 'NEWDATA' sheet
-    for ( var i=0, lenCsv=csvData.length; i<lenCsv; i++ ) {
-      newsheet.getRange(i+1, 1, 1, csvData[i].length).setValues(new Array(csvData[i]));
+  var fSource = DriveApp.getFolderById('1924fm3uNR4WKB5n3IqmRLkk3eL26uN7h'); // reports_folder_id = id of folder where csv reports are saved
+  var ss = SpreadsheetApp.openById('13VgrmzIpy_Kwgf3BZ9lciPBGVw8t4oaD208UZhSoaDM'); // data_sheet_id = id of spreadsheet that holds the data to be updated with new report data
+  var fileNames = [
+    {csv: 'audience_city.csv', name: 'Audience City'},
+    {csv: 'audience_country.csv',name: 'Audience Country'},
+    {csv: 'audience_gender_age.csv', name: 'Audience Gender Age'},
+    {csv: 'audience_locale.csv', name: 'Audience Locale'},
+    {csv: 'email_contacts.csv', name: 'Email Contacts'},
+    {csv: 'follower_count.csv', name: 'Follower Count'},
+    {csv: 'get_directions_clicks.csv', name: 'Direction Clicks'},
+    {csv: 'impressions.csv', name: 'Impressions'},
+    {csv: 'online_followers.csv', name: 'Online Followers'},
+    {csv: 'phone_call_clicks.csv', name: 'Phone Call Clicks'},
+    {csv: 'profile_views.csv', name: 'Profile Views'},
+    {csv: 'reach.csv', name: 'Reach'},
+    {csv: 'text_message_clicks.csv', name: 'Text Message Clicks'},
+    {csv: 'website_clicks.csv', name: 'Website Clicks'},
+    {csv: 'total_follower_count.csv', name: 'Total Follower Count'}
+  ];
+ 
+   Logger.log(fileNames.length);
+   for (var i = 0; i < fileNames.length; i++) {
+    Logger.log(fileNames[i])
+    var fi = fSource.getFilesByName(fileNames[i].csv); // latest report file
+    if ( fi.hasNext() ) { // proceed if "report.csv" file exists in the reports folder
+      var file = fi.next();
+      var csv = file.getBlob().getDataAsString();
+      var csvData = CSVToArray(csv); // see below for CSVToArray function
+      //var sheet = ss.getActiveSheet();
+      var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(fileNames[i].name);
+      Logger.log(sheet)
+      // loop through csv data array and insert (append) as rows into 'NEWDATA' sheet
+      for ( var j=0, lenCsv=csvData.length; j<lenCsv; j++ ) {
+        sheet.getRange(j+1, 1, 1, csvData[j].length).setValues(new Array(csvData[j]));
+      }
+      /*
+      ** report data is now in 'NEWDATA' sheet in the spreadsheet - process it as needed,
+      ** then delete 'NEWDATA' sheet using ss.deleteSheet(newsheet)
+      */
+      // rename the report.csv file so it is not processed on next scheduled run
+      //file.setName("audience_city-"+(new Date().toString())+".csv");
     }
-    /*
-    ** report data is now in 'NEWDATA' sheet in the spreadsheet - process it as needed,
-    ** then delete 'NEWDATA' sheet using ss.deleteSheet(newsheet)
-    */
-    // rename the report.csv file so it is not processed on next scheduled run
-    file.setName("report-"+(new Date().toString())+".csv");
   }
 };
 

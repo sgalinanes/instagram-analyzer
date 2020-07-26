@@ -5,10 +5,11 @@ import fs from 'fs';
 export function getData() {
     const lastUpdatedTimestamp =  getLastUpdatedTimestamp('insights')
     getInsights(lastUpdatedTimestamp);
+    const businessUpdatedTimestamp = getLastUpdatedTimestamp('business');
+    getBusinessDiscovery(businessUpdatedTimestamp);
 }
 
 //TODO: Check what happens when timestamp periods < 1 day!
-//TODO: Check that last day updated data is re-updated (half-days issue)
 async function getInsights(lastUpdatedTimestamp) {
     const insights = config.instagramConfiguration.insights;
     const updateDateStream = fs.createWriteStream('update-insights.txt', {flags: 'w'});
@@ -57,16 +58,15 @@ async function getAperiodicInsight(instagramId, metric, period) {
 async function getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, period) {
     // Update from lastUpdatedTimestamp to currentDay - 1.
     // This way you avoid daily "half-updates".
-    // 22/07/2020 -> 21/07/2020 ; 20/07/2020
+    // 23/07/2020 -> 
     const TIMESTAMP_DAY = 86400;
     const rangeLimit = 2592000;
 
-    // Calculate current date and set update limit until today at 00:00:00
+    // Calculate current date and set update limit until today (yesterday's end) at 00:00:00
     const currentTime = parseInt((Date.now() / 1000).toFixed(0))
     const currentDay = new Date(currentTime * 1000);
     currentDay.setHours(0); currentDay.setMinutes(0); currentDay.setSeconds(0);
-    const timeLimit = currentDay;
-    console.log(timeLimit)
+    const timeLimit = (currentDay.getTime() / 1000).toFixed(0);
     //
 
     const stream = fs.createWriteStream('data/' + metric + ".csv", {flags: 'a'});
@@ -80,7 +80,8 @@ async function getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, per
             from = to + 1;
         }
         
-        console.log(timestampRanges)
+        console.log(metric);
+        console.log(timestampRanges);
         for(let timestampRange of timestampRanges) {
             if(timestampRange.to > (timeLimit)) {
                 timestampRange.to = timeLimit;
@@ -97,6 +98,8 @@ async function getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, per
                 writeOnlineFollowers(stream, historicValues);
             } else {
                 historicValues.forEach(historicValue => {
+                    console.log("Metric: " + metric);
+                    console.log("Writing to file: " + historicValue.end_time.slice(0, 10) + "," + historicValue.value);
                     stream.write(historicValue.end_time.slice(0, 10) + ',' + historicValue.value + '\n');
                 })
             }
@@ -107,6 +110,39 @@ async function getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, per
         stream.end();
     }
    
+}
+
+async function getBusinessDiscovery(lastUpdatedTimestamp) {
+    const TIMESTAMP_DAY = 86400;
+    // Calculate current date and set update limit until today (yesterday's end) at 00:00:00
+    const lastDay = new Date(lastUpdatedTimestamp * 1000);
+    lastDay.setHours(0); lastDay.setMinutes(0); lastDay.setSeconds(0);
+    const timeLimit = parseInt((lastDay.getTime() / 1000).toFixed(0)) + TIMESTAMP_DAY;
+    //
+    const currentTime = parseInt((Date.now() / 1000).toFixed(0))
+
+    if(currentTime < timeLimit) {
+        console.log("Already updated today");
+        return;
+    }
+
+    const instagramId = config.instagramConfiguration.client.instagramId;
+    const updateDateStream = fs.createWriteStream('update-business.txt', {flags: 'w'});
+    const stream = fs.createWriteStream('data/total_follower_count.csv', {flags: 'a'});
+    try {
+        let response = await axios.get(config.FACEBOOK_GRAPH_API + instagramId + 
+            '?fields=business_discovery.username(by.beyond){followers_count}&access_token=' + config.instagramConfiguration.app.longLivedToken);
+        
+        let follower_count = response.data.business_discovery.followers_count;
+        let follower_count_time = Date.now();
+        stream.write(follower_count_time.toString().slice(0, 10) + ',' + follower_count + '\n');
+
+        updateDateStream.write(currentTime.toString());
+        updateDateStream.end();
+    } catch(err) {
+        console.error(err);
+    }
+    
 }
 
 function writeOnlineFollowers(stream, historicValues) {
@@ -123,5 +159,7 @@ function writeOnlineFollowers(stream, historicValues) {
 function getLastUpdatedTimestamp(type) {
     if(type == 'insights') {
         return fs.readFileSync('update-insights.txt', "utf-8")
+    } else if (type == 'business') {
+        return fs.readFileSync('update-business.txt', "utf-8")
     }
 }
