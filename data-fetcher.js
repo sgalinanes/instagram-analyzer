@@ -3,13 +3,12 @@ import { configuration as config } from './config.js';
 import fs from 'fs';
 
 export function getData() {
-    const lastUpdatedTimestamp =  getLastUpdatedTimestamp('insights')
+    const lastUpdatedTimestamp = getLastUpdatedTimestamp('insights')
     getInsights(lastUpdatedTimestamp);
     const businessUpdatedTimestamp = getLastUpdatedTimestamp('business');
     getBusinessDiscovery(businessUpdatedTimestamp);
 }
 
-//TODO: Check what happens when timestamp periods < 1 day!
 async function getInsights(lastUpdatedTimestamp) {
     const insights = config.instagramConfiguration.insights;
     const updateDateStream = fs.createWriteStream('update-insights.txt', {flags: 'w'});
