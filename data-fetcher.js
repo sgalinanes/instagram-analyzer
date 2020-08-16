@@ -2,6 +2,19 @@ import axios from 'axios';
 import { configuration as config } from './config.js';
 import fs from 'fs';
 
+function timeConverter(UNIX_timestamp){
+    var a = new Date(UNIX_timestamp * 1000);
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var year = a.getFullYear();
+    var month = months[a.getMonth()];
+    var date = a.getDate();
+    var hour = a.getHours();
+    var min = a.getMinutes() < 10 ? '0' + a.getMinutes() : a.getMinutes(); 
+    var sec = a.getSeconds() < 10 ? '0' + a.getSeconds() : a.getSeconds();
+    var time = date + ' ' + month + ' ' + year + ' ' + hour + ':' + min + ':' + sec ;
+    return time;
+}
+
 export function getData() {
     const lastUpdatedTimestamp = getLastUpdatedTimestamp('insights')
     getInsights(lastUpdatedTimestamp);
@@ -134,7 +147,7 @@ async function getBusinessDiscovery(lastUpdatedTimestamp) {
         
         let follower_count = response.data.business_discovery.followers_count;
         let follower_count_time = Date.now();
-        stream.write(follower_count_time.toString().slice(0, 10) + ',' + follower_count + '\n');
+        stream.write(timeConverter(parseInt(follower_count_time.toString().slice(0, 10))) + ',' + follower_count + '\n');
 
         updateDateStream.write(currentTime.toString());
         updateDateStream.end();
