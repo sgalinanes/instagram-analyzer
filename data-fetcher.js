@@ -17,36 +17,54 @@ function timeConverter(UNIX_timestamp){
 
 export function getData() {
     const lastUpdatedTimestamp = getLastUpdatedTimestamp('insights')
-    getInsights(lastUpdatedTimestamp);
+    await getInsights(lastUpdatedTimestamp);
+    writeInsightTimestamp();
     const businessUpdatedTimestamp = getLastUpdatedTimestamp('business');
-    getBusinessDiscovery(businessUpdatedTimestamp);
+    await getBusinessDiscovery(businessUpdatedTimestamp);
+    writeBusinessDiscoveryTimestamp();
 }
 
-async function getInsights(lastUpdatedTimestamp) {
-    const insights = config.instagramConfiguration.insights;
+function writeInsightTimestamp() {
     const updateDateStream = fs.createWriteStream('update-insights.txt', {flags: 'w'});
-    Object.entries(insights).forEach(async ([metric, period]) => {
-        try {
-            const instagramId = config.instagramConfiguration.client.instagramId;
-            
-            if(metric == 'audience_city' || metric == 'audience_country' || metric == 'audience_gender_age' || metric == 'audience_locale') {
-                return getAperiodicInsight(instagramId, metric, period);       
-            }
-            getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, period);
-            
-        } catch(err) { 
-            console.log("Error")
-            if(!err.response)
-                console.log(err)
-            else
-                console.error(err.response)
-        } 
-    });
     const TIMESTAMP_DAY = 86400;
     const currentTime = parseInt((Date.now() / 1000).toFixed(0))
     const timeStamp = currentTime - TIMESTAMP_DAY
     updateDateStream.write(timeStamp.toString());
     updateDateStream.end();
+}
+
+function writeBusinessDiscoveryTimestamp() {
+    const updateDateStream = fs.createWriteStream('update-business.txt', {flags: 'w'});
+    const currentTime = parseInt((Date.now() / 1000).toFixed(0))
+
+    updateDateStream.write(currentTime.toString());
+    updateDateStream.end();
+}
+
+async function getInsights(lastUpdatedTimestamp) {
+    const insights = config.instagramConfiguration.insights;
+    try {
+        Object.entries(insights).forEach(async ([metric, period]) => {
+            try {
+                const instagramId = config.instagramConfiguration.client.instagramId;
+                
+                if(metric == 'audience_city' || metric == 'audience_country' || metric == 'audience_gender_age' || metric == 'audience_locale') {
+                    return getAperiodicInsight(instagramId, metric, period);       
+                }
+                getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, period);
+                
+            } catch(err) { 
+                console.log("Error")
+                if(!err.response)
+                    console.log(err)
+                else
+                    console.error(err.response)
+            } 
+        });
+    } catch(err) {
+        console.error(err);
+        console.log("Ocurrio un error en getInsights");
+    }   
 }
 
 async function getAperiodicInsight(instagramId, metric, period) {
@@ -130,7 +148,6 @@ async function getBusinessDiscovery(lastUpdatedTimestamp) {
     const lastDay = new Date(lastUpdatedTimestamp * 1000);
     lastDay.setHours(0); lastDay.setMinutes(0); lastDay.setSeconds(0);
     const timeLimit = parseInt((lastDay.getTime() / 1000).toFixed(0)) + TIMESTAMP_DAY;
-    //
     const currentTime = parseInt((Date.now() / 1000).toFixed(0))
 
     if(currentTime < timeLimit) {
@@ -139,7 +156,6 @@ async function getBusinessDiscovery(lastUpdatedTimestamp) {
     }
 
     const instagramId = config.instagramConfiguration.client.instagramId;
-    const updateDateStream = fs.createWriteStream('update-business.txt', {flags: 'w'});
     const stream = fs.createWriteStream('data/total_follower_count.csv', {flags: 'a'});
     try {
         let response = await axios.get(config.FACEBOOK_GRAPH_API + instagramId + 
@@ -148,13 +164,9 @@ async function getBusinessDiscovery(lastUpdatedTimestamp) {
         let follower_count = response.data.business_discovery.followers_count;
         let follower_count_time = Date.now();
         stream.write(timeConverter(parseInt(follower_count_time.toString().slice(0, 10))) + ',' + follower_count + '\n');
-
-        updateDateStream.write(currentTime.toString());
-        updateDateStream.end();
     } catch(err) {
         console.error(err);
     }
-    
 }
 
 function writeOnlineFollowers(stream, historicValues) {
