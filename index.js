@@ -1,5 +1,5 @@
 import http from 'http';
-import { getData } from './data-fetcher.js';
+import { getUserData } from './data-fetcher.js';
 
 const hostname = '127.0.0.1';
 const port = 3000;
@@ -11,6 +11,6 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(port, hostname, () => {
-  getData();
+  getUserData();
   console.log(`El servidor se está ejecutando en http://${hostname}:${port}/`);
 });

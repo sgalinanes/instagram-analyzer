@@ -15,13 +15,16 @@ function timeConverter(UNIX_timestamp){
     return time;
 }
 
-export function getData() {
+export function getUserData() {
     const lastUpdatedTimestamp = getLastUpdatedTimestamp('insights')
-    await getInsights(lastUpdatedTimestamp);
+    getInsights(lastUpdatedTimestamp);
     writeInsightTimestamp();
     const businessUpdatedTimestamp = getLastUpdatedTimestamp('business');
-    await getBusinessDiscovery(businessUpdatedTimestamp);
+    getBusinessDiscovery(businessUpdatedTimestamp);
     writeBusinessDiscoveryTimestamp();
+    //const mediaUpdatedTimestamp = getLastUpdatedTimestamp('media');
+    //await getUserMedia(mediaUpdatedTimestamp);
+
 }
 
 function writeInsightTimestamp() {
@@ -185,5 +188,7 @@ function getLastUpdatedTimestamp(type) {
         return fs.readFileSync('update-insights.txt', "utf-8")
     } else if (type == 'business') {
         return fs.readFileSync('update-business.txt', "utf-8")
+    } else if (type == 'media') {
+        return fs.readFileSync('update-media.txt', "utf-8")
     }
 }

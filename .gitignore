@@ -4,3 +4,4 @@ data
 config.js
 analysis
 .vscode
+sheets-automatic-update.js
