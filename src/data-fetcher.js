@@ -2,11 +2,57 @@
 // import { configuration as config } from '../config.js';
 // import fs from 'fs';
 
+const { config } = require('../config');  
+const INSIGHTS_NAME = 'insights';
+const BUSINESS_NAME = 'business';
+const MEDIA_NAME = 'media';
+
 async function getInsights(id) {
-    return {
-        insights: 'ok'
+    // const instagramId = config.instagramConfiguration.client.instagramId;
+    const instagramId = id;
+    const lastUpdatedTimestamp = getLastUpdatedTimestamp(INSIGHTS_NAME);
+    const insightOptions = config.instagramConfiguration.insights;
+
+    try {
+        Object.entries(insightOptions).forEach(async ([metric, period]) => {
+            try {
+                
+                if(metric == 'audience_city' || metric == 'audience_country' || metric == 'audience_gender_age' || metric == 'audience_locale') {
+                    return getAperiodicInsight(instagramId, metric, period);       
+                }
+                getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, period);
+                
+            } catch(err) { 
+                console.log("Error")
+                if(!err.response)
+                    console.log(err)
+                else
+                    console.error(err.response)
+            } 
+        });
+    } catch(err) {
+        console.error(err);
+        console.log("Ocurrio un error en getInsights");
+    }   
+}
+
+function getLastUpdatedTimestamp(type) {
+    switch(type) {
+        case INSIGHTS_NAME:
+            return fs.readFileSync('update-insights.txt', 'utf-8');
+
+        case BUSINESS_NAME:
+            return fs.readFileSync('update-business.txt', 'utf-8');
+
+        case MEDIA_NAME:
+            return fs.readFileSync('update-media.txt', 'utf-8');
+
+        default:
+            // TODO: Fail somehow
+            break;
     }
 }
+
 // function timeConverter(UNIX_timestamp){
 //     var a = new Date(UNIX_timestamp * 1000);
 //     var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -186,16 +232,6 @@ async function getInsights(id) {
 //         const hourValuesCsv = hourValues.join(", ")
 //         stream.write(historicValue.end_time.slice(0, 10) + ',' + hourValuesCsv + '\n');
 //     })
-// }
-
-// function getLastUpdatedTimestamp(type) {
-//     if(type == 'insights') {
-//         return fs.readFileSync('update-insights.txt', "utf-8")
-//     } else if (type == 'business') {
-//         return fs.readFileSync('update-business.txt', "utf-8")
-//     } else if (type == 'media') {
-//         return fs.readFileSync('update-media.txt', "utf-8")
-//     }
 // }
 
 module.exports = {
