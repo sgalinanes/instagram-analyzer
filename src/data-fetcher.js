@@ -2,7 +2,7 @@
 // import { configuration as config } from '../config.js';
 // import fs from 'fs';
 
-export async function getInsights(id) {
+async function getInsights(id) {
     return {
         insights: 'ok'
     }
@@ -197,3 +197,7 @@ export async function getInsights(id) {
 //         return fs.readFileSync('update-media.txt', "utf-8")
 //     }
 // }
+
+module.exports = {
+    getInsights: getInsights
+};

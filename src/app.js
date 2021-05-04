@@ -1,5 +1,5 @@
-import { getInsights } from './data-fetcher.js';
-import express from 'express';
+const { getInsights } = require('./data-fetcher.js');
+const express = require('express');
 
 const port = 3000;
 const app = express();
