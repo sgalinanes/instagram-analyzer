@@ -1,4 +1,3 @@
-// import { configuration as config } from '../config.js';
 const fs = require('fs');
 const axios  = require('axios');
 const { config } = require('../config');  
@@ -16,7 +15,6 @@ function isAperiodic(metric) {
 }
 
 async function getInsights(id) {
-    // const instagramId = config.instagramConfiguration.client.instagramId;
     const instagramId = id;
     const lastUpdatedTimestamp = getLastUpdatedTimestamp(INSIGHTS_NAME);
     const insightOptions = config.instagramConfiguration.insights;
@@ -52,7 +50,6 @@ async function getInsights(id) {
 }
 
 async function getAperiodicInsight(instagramId, metric, period) {
-    //const stream = fs.createWriteStream('data/' + metric + ".csv", {flags: 'w'});
     const url = `${config.FACEBOOK_GRAPH_API}/${instagramId}/insights?metric=${metric}&period=${period}&access_token=${config.instagramConfiguration.app.longLivedToken}`
     const response = await axios.get(url)
 
@@ -63,9 +60,6 @@ async function getAperiodicInsight(instagramId, metric, period) {
     }
 
     return values
-    // Object.entries(values).forEach(([key, val]) => {
-    //     stream.write(key + ',' + val + '\n');
-    // });
 }
 
 async function getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, period) {
@@ -80,7 +74,6 @@ async function getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, per
     currentDay.setHours(0); currentDay.setMinutes(0); currentDay.setSeconds(0);
     const timeLimit = (currentDay.getTime() / 1000).toFixed(0);
 
-    //const stream = fs.createWriteStream('data/' + metric + ".csv", {flags: 'a'});
     const timestampRanges = []
     let from = parseInt(lastUpdatedTimestamp)
     let to = null
@@ -90,8 +83,8 @@ async function getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, per
         from = to + 1;
     }
     
-    console.log(metric);
-    console.log(timestampRanges);
+    console.info(metric);
+    console.info(timestampRanges);
     const historicValuesArray = []
     for(let timestampRange of timestampRanges) {
         if(timestampRange.to > (timeLimit)) {
@@ -106,21 +99,9 @@ async function getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, per
             historicValues = response.data.data[0].values;
         
         historicValuesArray.push(historicValues)
-        // if(metric == 'online_followers') {
-        //     writeOnlineFollowers(stream, historicValues);
-        // } else {
-        //     historicValues.forEach(historicValue => {
-        //         console.log("Metric: " + metric);
-        //         console.log("Writing to file: " + historicValue.end_time.slice(0, 10) + "," + historicValue.value);
-        //         stream.write(historicValue.end_time.slice(0, 10) + ',' + historicValue.value + '\n');
-        //     })
-        // }
     }
 
     return historicValuesArray
-    // } finally {
-    //     stream.end();
-    // }
 }
 
 function getLastUpdatedTimestamp(type) {
@@ -208,39 +189,6 @@ async function getBusinessData(id) {
     updateTimestamp(BUSINESS_NAME)
     return followerResponse
 }
-
-
-// function timeConverter(UNIX_timestamp){
-//     var a = new Date(UNIX_timestamp * 1000);
-//     var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-//     var year = a.getFullYear();
-//     var month = months[a.getMonth()];
-//     var date = a.getDate();
-//     var hour = a.getHours();
-//     var min = a.getMinutes() < 10 ? '0' + a.getMinutes() : a.getMinutes(); 
-//     var sec = a.getSeconds() < 10 ? '0' + a.getSeconds() : a.getSeconds();
-//     var time = date + ' ' + month + ' ' + year + ' ' + hour + ':' + min + ':' + sec ;
-//     return time;
-// }
-
-// function writeBusinessDiscoveryTimestamp() {
-//     const updateDateStream = fs.createWriteStream('update-business.txt', {flags: 'w'});
-//     const currentTime = parseInt((Date.now() / 1000).toFixed(0))
-
-//     updateDateStream.write(currentTime.toString());
-//     updateDateStream.end();
-// }
-
-// function writeOnlineFollowers(stream, historicValues) {
-//     historicValues.forEach(historicValue => {
-//         const hourValues = [];
-//         for(let i = 0; i < 24; i++) {
-//             hourValues.push(historicValue.value[i.toString()])
-//         }
-//         const hourValuesCsv = hourValues.join(", ")
-//         stream.write(historicValue.end_time.slice(0, 10) + ',' + hourValuesCsv + '\n');
-//     })
-// }
 
 module.exports = {
     getInsights: getInsights,
