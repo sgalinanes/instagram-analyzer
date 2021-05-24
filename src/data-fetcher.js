@@ -1,7 +1,6 @@
-// import axios from 'axios';
 // import { configuration as config } from '../config.js';
-// import fs from 'fs';
-
+const fs = require('fs');
+const axios  = require('axios');
 const { config } = require('../config');  
 const INSIGHTS_NAME = 'insights';
 const BUSINESS_NAME = 'business';
@@ -42,8 +41,9 @@ async function getInsights(id) {
 
 async function getAperiodicInsight(instagramId, metric, period) {
     //const stream = fs.createWriteStream('data/' + metric + ".csv", {flags: 'w'});
-    const response = await axios.get(`${config.FACEBOOK_GRAPH_API}${instagramId} 
-    /insights?metric=${metric}&period=${period}&access_token=${config.instagramConfiguration.app.longLivedToken}`)
+    const url = `${config.FACEBOOK_GRAPH_API}/${instagramId}/insights?metric=${metric}&period=${period}&access_token=${config.instagramConfiguration.app.longLivedToken}`
+    console.log("Called: " + url)
+    const response = await axios.get(url)
 
     const values = response?.data?.data[0]?.values[0]?.value
     if (!values) {
@@ -51,10 +51,68 @@ async function getAperiodicInsight(instagramId, metric, period) {
         throw err
     }
 
+    console.log("Returning aperiodinsight: " + metric)
+    console.log(values)
     return values
     // Object.entries(values).forEach(([key, val]) => {
     //     stream.write(key + ',' + val + '\n');
     // });
+}
+
+async function getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, period) {
+    // Update from lastUpdatedTimestamp to currentDay - 1.
+    // This way you avoid daily "half-updates".
+    const TIMESTAMP_DAY = 86400; // 1 day
+    const rangeLimit = TIMESTAMP_DAY * 30; // 1 month  
+
+    // Calculate current date and set update limit until today (yesterday's end) at 00:00:00
+    const currentTime = parseInt((Date.now() / 1000).toFixed(0))
+    const currentDay = new Date(currentTime * 1000);
+    currentDay.setHours(0); currentDay.setMinutes(0); currentDay.setSeconds(0);
+    const timeLimit = (currentDay.getTime() / 1000).toFixed(0);
+
+    //const stream = fs.createWriteStream('data/' + metric + ".csv", {flags: 'a'});
+    const timestampRanges = []
+    let from = parseInt(lastUpdatedTimestamp)
+    let to = null
+    while(from < timeLimit) {
+        to = from + rangeLimit-1; 
+        timestampRanges.push({from: from, to: to});
+        from = to + 1;
+    }
+    
+    console.log(metric);
+    console.log(timestampRanges);
+    for(let timestampRange of timestampRanges) {
+        if(timestampRange.to > (timeLimit)) {
+            timestampRange.to = timeLimit;
+        }
+
+        const url = `${config.FACEBOOK_GRAPH_API}/${instagramId}/insights?metric=${metric}&period=${period}&since=${timestampRange.from}&until=${timestampRange.to}&access_token=${config.instagramConfiguration.app.longLivedToken}`
+        const response = await axios.get(url)
+        console.log("Called: " + url)
+
+        let historicValues = []
+        if(response.data.data[0])
+            historicValues = response.data.data[0].values;
+        
+        console.log("Returning periodic insight: " + metric)
+        console.log(historicValues)
+        return historicValues
+        // if(metric == 'online_followers') {
+        //     writeOnlineFollowers(stream, historicValues);
+        // } else {
+        //     historicValues.forEach(historicValue => {
+        //         console.log("Metric: " + metric);
+        //         console.log("Writing to file: " + historicValue.end_time.slice(0, 10) + "," + historicValue.value);
+        //         stream.write(historicValue.end_time.slice(0, 10) + ',' + historicValue.value + '\n');
+        //     })
+        // }
+    }
+    // } finally {
+    //     stream.end();
+    // }
+   
 }
 
 function getLastUpdatedTimestamp(type) {
@@ -142,64 +200,6 @@ function getLastUpdatedTimestamp(type) {
 //     }   
 // }
 
-
-
-// async function getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, period) {
-//     // Update from lastUpdatedTimestamp to currentDay - 1.
-//     // This way you avoid daily "half-updates".
-//     // 23/07/2020 -> 
-//     const TIMESTAMP_DAY = 86400;
-//     const rangeLimit = 2592000;
-
-//     // Calculate current date and set update limit until today (yesterday's end) at 00:00:00
-//     const currentTime = parseInt((Date.now() / 1000).toFixed(0))
-//     const currentDay = new Date(currentTime * 1000);
-//     currentDay.setHours(0); currentDay.setMinutes(0); currentDay.setSeconds(0);
-//     const timeLimit = (currentDay.getTime() / 1000).toFixed(0);
-//     //
-
-//     const stream = fs.createWriteStream('data/' + metric + ".csv", {flags: 'a'});
-//     try {
-//         let timestampRanges = []
-//         let from = parseInt(lastUpdatedTimestamp)
-//         let to = null
-//         while(from < timeLimit) {
-//             to = from + rangeLimit-1; 
-//             timestampRanges.push({from: from, to: to});
-//             from = to + 1;
-//         }
-        
-//         console.log(metric);
-//         console.log(timestampRanges);
-//         for(let timestampRange of timestampRanges) {
-//             if(timestampRange.to > (timeLimit)) {
-//                 timestampRange.to = timeLimit;
-//             }
-            
-//             let response = await axios.get(config.FACEBOOK_GRAPH_API + instagramId + 
-//                 '/insights?metric='+metric+'&period='+period+'&since='+timestampRange.from+'&until='+timestampRange.to+'&access_token=' + config.instagramConfiguration.app.longLivedToken);
-            
-//             let historicValues = []
-//             if(response.data.data[0])
-//                 historicValues = response.data.data[0].values;
-            
-//             if(metric == 'online_followers') {
-//                 writeOnlineFollowers(stream, historicValues);
-//             } else {
-//                 historicValues.forEach(historicValue => {
-//                     console.log("Metric: " + metric);
-//                     console.log("Writing to file: " + historicValue.end_time.slice(0, 10) + "," + historicValue.value);
-//                     stream.write(historicValue.end_time.slice(0, 10) + ',' + historicValue.value + '\n');
-//                 })
-//             }
-//         }
-//     } catch(err) {
-//         throw(err)
-//     } finally {
-//         stream.end();
-//     }
-   
-// }
 
 // async function getBusinessDiscovery(lastUpdatedTimestamp) {
 //     const TIMESTAMP_DAY = 86400;
