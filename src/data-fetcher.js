@@ -7,33 +7,54 @@ const INSIGHTS_NAME = 'insights';
 const BUSINESS_NAME = 'business';
 const MEDIA_NAME = 'media';
 
+function isAperiodic(metric) {
+    const aperiodicInsights = ['audience_city', 'audience_country', 'audience_gender_age', 'audience_locale']
+
+    if (aperiodicInsights.includes(metric))
+        return true 
+
+    return false 
+}
+
 async function getInsights(id) {
     // const instagramId = config.instagramConfiguration.client.instagramId;
     const instagramId = id;
     const lastUpdatedTimestamp = getLastUpdatedTimestamp(INSIGHTS_NAME);
     const insightOptions = config.instagramConfiguration.insights;
 
-    try {
-        Object.entries(insightOptions).forEach(async ([metric, period]) => {
-            try {
-                
-                if(metric == 'audience_city' || metric == 'audience_country' || metric == 'audience_gender_age' || metric == 'audience_locale') {
-                    return getAperiodicInsight(instagramId, metric, period);       
-                }
-                getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, period);
-                
-            } catch(err) { 
-                console.log("Error")
-                if(!err.response)
-                    console.log(err)
-                else
-                    console.error(err.response)
-            } 
-        });
-    } catch(err) {
-        console.error(err);
-        console.log("Ocurrio un error en getInsights");
-    }   
+    Object.entries(insightOptions).forEach(async ([metric, period]) => {
+        try {
+            if (isAperiodic(metric)) {
+                return getAperiodicInsight(instagramId, metric, period)
+            }
+
+            getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, period);
+            
+        } catch(err) { 
+            console.error("An error ocurred")
+            if(!err.response)
+                console.error(err)
+            else
+                console.error(err.response)
+        } 
+    });
+}
+
+async function getAperiodicInsight(instagramId, metric, period) {
+    //const stream = fs.createWriteStream('data/' + metric + ".csv", {flags: 'w'});
+    const response = await axios.get(`${config.FACEBOOK_GRAPH_API}${instagramId} 
+    /insights?metric=${metric}&period=${period}&access_token=${config.instagramConfiguration.app.longLivedToken}`)
+
+    const values = response?.data?.data[0]?.values[0]?.value
+    if (!values) {
+        const err = "An error occurred while getting the aperiodic insights"
+        throw err
+    }
+
+    return values
+    // Object.entries(values).forEach(([key, val]) => {
+    //     stream.write(key + ',' + val + '\n');
+    // });
 }
 
 function getLastUpdatedTimestamp(type) {
@@ -121,23 +142,7 @@ function getLastUpdatedTimestamp(type) {
 //     }   
 // }
 
-// async function getAperiodicInsight(instagramId, metric, period) {
-//     const stream = fs.createWriteStream('data/' + metric + ".csv", {flags: 'w'});
-//     try {
-//         let response = await axios.get(config.FACEBOOK_GRAPH_API + instagramId + 
-//             '/insights?metric='+metric+'&period='+period+'&access_token=' + config.instagramConfiguration.app.longLivedToken);
-    
-//         let values = response.data.data[0].values[0].value
-//         Object.entries(values).forEach(([key, val]) => {
-//             stream.write(key + ',' + val + '\n');
-//         });
-//     } catch(err) {
-//         throw(err)
-//     } finally {
-//         stream.end();
-//     }
 
-// }
 
 // async function getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, period) {
 //     // Update from lastUpdatedTimestamp to currentDay - 1.
