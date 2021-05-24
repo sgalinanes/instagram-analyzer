@@ -16,12 +16,9 @@ app.listen(port, () => console.log(`Instagram Analyzer server listening on port 
 // });
 
 router.get('/accounts/:id/insights', async (req, res, next) => {
-  console.log("Called get insights")
   const id = req.params.id;
   try {
     const insights = await getInsights(id);
-    console.log("Insights")
-    console.log(insights)
     res.json({
       status: 'ok',
       insights: insights,

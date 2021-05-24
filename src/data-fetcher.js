@@ -47,14 +47,12 @@ async function getInsights(id) {
         } 
     }));
 
-    console.log("INSIGHTS", insights);
     return insights
 }
 
 async function getAperiodicInsight(instagramId, metric, period) {
     //const stream = fs.createWriteStream('data/' + metric + ".csv", {flags: 'w'});
     const url = `${config.FACEBOOK_GRAPH_API}/${instagramId}/insights?metric=${metric}&period=${period}&access_token=${config.instagramConfiguration.app.longLivedToken}`
-    console.log("Called: " + url)
     const response = await axios.get(url)
 
     const values = response?.data?.data[0]?.values[0]?.value
@@ -63,8 +61,6 @@ async function getAperiodicInsight(instagramId, metric, period) {
         throw err
     }
 
-    console.log("Returning aperiodinsight: " + metric)
-    console.log(values)
     return values
     // Object.entries(values).forEach(([key, val]) => {
     //     stream.write(key + ',' + val + '\n');
@@ -102,14 +98,11 @@ async function getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, per
 
         const url = `${config.FACEBOOK_GRAPH_API}/${instagramId}/insights?metric=${metric}&period=${period}&since=${timestampRange.from}&until=${timestampRange.to}&access_token=${config.instagramConfiguration.app.longLivedToken}`
         const response = await axios.get(url)
-        console.log("Called: " + url)
 
         let historicValues = []
         if(response.data.data[0])
             historicValues = response.data.data[0].values;
         
-        console.log("Returning periodic insight: " + metric)
-        console.log(historicValues)
         return historicValues
         // if(metric == 'online_followers') {
         //     writeOnlineFollowers(stream, historicValues);
