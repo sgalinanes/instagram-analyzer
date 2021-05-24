@@ -1,4 +1,4 @@
-const { getInsights } = require('./data-fetcher.js');
+const { getInsights, getBusinessData } = require('./data-fetcher.js');
 const express = require('express');
 
 const port = 3000;
@@ -28,6 +28,20 @@ router.get('/accounts/:id/insights', async (req, res, next) => {
     next(err);
   }
 });
+
+router.get('/accounts/:id/business', async (req, res, next) => {
+  const id = req.params.id
+  try {
+    const businessData = await getBusinessData(id);
+    res.json({
+      status: 'ok',
+      businessData: businessData
+    })
+  } catch(err) {
+    console.error(err);
+    next(err);
+  }
+})
 
 // const hostname = '127.0.0.1';
 

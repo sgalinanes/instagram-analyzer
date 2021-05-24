@@ -47,7 +47,7 @@ async function getInsights(id) {
         } 
     }));
 
-    updateTimestamp()
+    updateTimestamp(INSIGHTS_NAME)
     return insights
 }
 
@@ -140,14 +140,75 @@ function getLastUpdatedTimestamp(type) {
     }
 }
 
-function updateTimestamp() {
-    const updateDateStream = fs.createWriteStream('update-insights.txt', {flags: 'w'});
+function updateTimestamp(type) {
+    let updateDateStream;
+    switch (type) {
+        case INSIGHTS_NAME:
+            updateDateStream = fs.createWriteStream('update-insights.txt', {flags: 'w'})
+            break;
+
+        case BUSINESS_NAME:
+            updateDateStream = fs.createWriteStream('update-business.txt', {flags: 'w'})
+            break;
+
+        case MEDIA_NAME:
+            updateDateStream = fs.createWriteStream('update-media.txt', {flags: 'w'})
+            break;
+
+        default:
+            // TODO: Fail somehow 
+            break;
+    }
+
+    if (!updateDateStream)
+        return; 
+
     const TIMESTAMP_DAY = 86400;
     const currentTime = parseInt((Date.now() / 1000).toFixed(0))
-    const timeStamp = currentTime - TIMESTAMP_DAY
+    let timeStamp = currentTime
+    if (type === INSIGHTS_NAME)
+        timeStamp = currentTime - TIMESTAMP_DAY
+
     updateDateStream.write(timeStamp.toString());
     updateDateStream.end();
 }
+
+async function getBusinessData(id) {
+    const TIMESTAMP_DAY = 86400;
+    // Calculate current date and set update limit until tomorrow (today's end) at 00:00:00
+    const lastUpdatedTimestamp = getLastUpdatedTimestamp(BUSINESS_NAME);
+    const lastDay = new Date(lastUpdatedTimestamp * 1000);
+    lastDay.setHours(0); lastDay.setMinutes(0); lastDay.setSeconds(0);
+    const timeLimit = parseInt((lastDay.getTime() / 1000).toFixed(0)) + TIMESTAMP_DAY;
+    const currentTime = parseInt((Date.now() / 1000).toFixed(0))
+
+    if(currentTime < timeLimit) {
+        console.info("Already updated today");
+        return;
+    }
+
+    const instagramId = id
+    let followerResponse;
+    //const stream = fs.createWriteStream('data/total_follower_count.csv', {flags: 'a'});
+    try {
+        const response = await axios.get(`${config.FACEBOOK_GRAPH_API}/${instagramId}?fields=business_discovery.username(by.beyond){followers_count}&access_token=${config.instagramConfiguration.app.longLivedToken}`);
+        const follower_count = response?.data?.business_discovery.followers_count;
+        const follower_count_time = new Date(Date.now());
+        followerResponse = {
+            metric: 'followers_count',
+            values: `${follower_count_time} - ${follower_count}`
+        }
+        //stream.write(timeConverter(parseInt(follower_count_time.toString().slice(0, 10))) + ',' + follower_count + '\n');
+    } catch(err) {
+        console.error(err);
+        const messageError = `An error ocurred when getting the business data occurred: ${err}`
+        throw messageError
+    }
+
+    updateTimestamp(BUSINESS_NAME)
+    return followerResponse
+}
+
 
 // function timeConverter(UNIX_timestamp){
 //     var a = new Date(UNIX_timestamp * 1000);
@@ -170,34 +231,6 @@ function updateTimestamp() {
 //     updateDateStream.end();
 // }
 
-
-// async function getBusinessDiscovery(lastUpdatedTimestamp) {
-//     const TIMESTAMP_DAY = 86400;
-//     // Calculate current date and set update limit until today (yesterday's end) at 00:00:00
-//     const lastDay = new Date(lastUpdatedTimestamp * 1000);
-//     lastDay.setHours(0); lastDay.setMinutes(0); lastDay.setSeconds(0);
-//     const timeLimit = parseInt((lastDay.getTime() / 1000).toFixed(0)) + TIMESTAMP_DAY;
-//     const currentTime = parseInt((Date.now() / 1000).toFixed(0))
-
-//     if(currentTime < timeLimit) {
-//         console.log("Already updated today");
-//         return;
-//     }
-
-//     const instagramId = config.instagramConfiguration.client.instagramId;
-//     const stream = fs.createWriteStream('data/total_follower_count.csv', {flags: 'a'});
-//     try {
-//         let response = await axios.get(config.FACEBOOK_GRAPH_API + instagramId + 
-//             '?fields=business_discovery.username(by.beyond){followers_count}&access_token=' + config.instagramConfiguration.app.longLivedToken);
-        
-//         let follower_count = response.data.business_discovery.followers_count;
-//         let follower_count_time = Date.now();
-//         stream.write(timeConverter(parseInt(follower_count_time.toString().slice(0, 10))) + ',' + follower_count + '\n');
-//     } catch(err) {
-//         console.error(err);
-//     }
-// }
-
 // function writeOnlineFollowers(stream, historicValues) {
 //     historicValues.forEach(historicValue => {
 //         const hourValues = [];
@@ -210,5 +243,6 @@ function updateTimestamp() {
 // }
 
 module.exports = {
-    getInsights: getInsights
+    getInsights: getInsights,
+    getBusinessData: getBusinessData
 };
