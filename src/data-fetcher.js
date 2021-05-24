@@ -165,21 +165,23 @@ async function getBusinessData(id) {
 
     if(currentTime < timeLimit) {
         console.info("Already updated today");
-        return;
+        return {
+            metric: 'followers_count',
+            values: '',
+            error_message: 'ERR: Data was already updated today, try tomorrow'
+        }
     }
 
     const instagramId = id
     let followerResponse;
-    //const stream = fs.createWriteStream('data/total_follower_count.csv', {flags: 'a'});
     try {
         const response = await axios.get(`${config.FACEBOOK_GRAPH_API}/${instagramId}?fields=business_discovery.username(by.beyond){followers_count}&access_token=${config.instagramConfiguration.app.longLivedToken}`);
-        const follower_count = response?.data?.business_discovery.followers_count;
-        const follower_count_time = new Date(Date.now());
+        const followerCount = response?.data?.business_discovery.followers_count;
+        const followerCountDate = new Date(Date.now());
         followerResponse = {
             metric: 'followers_count',
-            values: `${follower_count_time} - ${follower_count}`
+            values: `${followerCountDate} - ${followerCount}`
         }
-        //stream.write(timeConverter(parseInt(follower_count_time.toString().slice(0, 10))) + ',' + follower_count + '\n');
     } catch(err) {
         console.error(err);
         const messageError = `An error ocurred when getting the business data occurred: ${err}`

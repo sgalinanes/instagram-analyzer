@@ -15,6 +15,15 @@ app.listen(port, () => console.log(`Instagram Analyzer server listening on port 
 //   next();
 // });
 
+app.use(function(err, req, res, next) {
+  // Only handle `next(err)` calls
+  res.json({
+    status: req.status,
+    error: err,
+    error_message: err.message
+  })
+});
+
 router.get('/accounts/:id/insights', async (req, res, next) => {
   const id = req.params.id;
   try {
@@ -42,16 +51,3 @@ router.get('/accounts/:id/business', async (req, res, next) => {
     next(err);
   }
 })
-
-// const hostname = '127.0.0.1';
-
-// const server = http.createServer((req, res) => {
-//   res.statusCode = 200;
-//   res.setHeader('Content-Type', 'text/plain');
-//   res.end('Hola Mundo');
-// });
-
-// server.listen(port, hostname, () => {
-//   getUserData();
-//   console.log(`El servidor se está ejecutando en http://${hostname}:${port}/`);
-// });
