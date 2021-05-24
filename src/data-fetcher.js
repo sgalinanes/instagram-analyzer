@@ -21,14 +21,23 @@ async function getInsights(id) {
     const lastUpdatedTimestamp = getLastUpdatedTimestamp(INSIGHTS_NAME);
     const insightOptions = config.instagramConfiguration.insights;
 
-    Object.entries(insightOptions).forEach(async ([metric, period]) => {
+    const insights = await Promise.all(Object.entries(insightOptions).map(async ([metric, period]) => {
         try {
             if (isAperiodic(metric)) {
-                return getAperiodicInsight(instagramId, metric, period)
+                const values = await getAperiodicInsight(instagramId, metric, period)
+                return {
+                    type: 'aperiodic',
+                    metric: metric,
+                    values: values
+                }
+            } else {
+                const values = await getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, period);
+                return {
+                    type: 'periodic',
+                    metric: metric,
+                    values: values
+                }
             }
-
-            getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, period);
-            
         } catch(err) { 
             console.error("An error ocurred")
             if(!err.response)
@@ -36,7 +45,10 @@ async function getInsights(id) {
             else
                 console.error(err.response)
         } 
-    });
+    }));
+
+    console.log("INSIGHTS", insights);
+    return insights
 }
 
 async function getAperiodicInsight(instagramId, metric, period) {

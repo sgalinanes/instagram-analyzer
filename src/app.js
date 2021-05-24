@@ -20,6 +20,8 @@ router.get('/accounts/:id/insights', async (req, res, next) => {
   const id = req.params.id;
   try {
     const insights = await getInsights(id);
+    console.log("Insights")
+    console.log(insights)
     res.json({
       status: 'ok',
       insights: insights,
