@@ -47,6 +47,7 @@ async function getInsights(id) {
         } 
     }));
 
+    updateTimestamp()
     return insights
 }
 
@@ -91,6 +92,7 @@ async function getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, per
     
     console.log(metric);
     console.log(timestampRanges);
+    const historicValuesArray = []
     for(let timestampRange of timestampRanges) {
         if(timestampRange.to > (timeLimit)) {
             timestampRange.to = timeLimit;
@@ -103,7 +105,7 @@ async function getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, per
         if(response.data.data[0])
             historicValues = response.data.data[0].values;
         
-        return historicValues
+        historicValuesArray.push(historicValues)
         // if(metric == 'online_followers') {
         //     writeOnlineFollowers(stream, historicValues);
         // } else {
@@ -114,10 +116,11 @@ async function getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, per
         //     })
         // }
     }
+
+    return historicValuesArray
     // } finally {
     //     stream.end();
     // }
-   
 }
 
 function getLastUpdatedTimestamp(type) {
@@ -137,6 +140,15 @@ function getLastUpdatedTimestamp(type) {
     }
 }
 
+function updateTimestamp() {
+    const updateDateStream = fs.createWriteStream('update-insights.txt', {flags: 'w'});
+    const TIMESTAMP_DAY = 86400;
+    const currentTime = parseInt((Date.now() / 1000).toFixed(0))
+    const timeStamp = currentTime - TIMESTAMP_DAY
+    updateDateStream.write(timeStamp.toString());
+    updateDateStream.end();
+}
+
 // function timeConverter(UNIX_timestamp){
 //     var a = new Date(UNIX_timestamp * 1000);
 //     var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -150,59 +162,12 @@ function getLastUpdatedTimestamp(type) {
 //     return time;
 // }
 
-// export function getUserData() {
-//     const lastUpdatedTimestamp = getLastUpdatedTimestamp('insights')
-//     getInsights(lastUpdatedTimestamp);
-//     writeInsightTimestamp();
-//     const businessUpdatedTimestamp = getLastUpdatedTimestamp('business');
-//     getBusinessDiscovery(businessUpdatedTimestamp);
-//     writeBusinessDiscoveryTimestamp();
-//     //const mediaUpdatedTimestamp = getLastUpdatedTimestamp('media');
-//     //await getUserMedia(mediaUpdatedTimestamp);
-
-// }
-
-// function writeInsightTimestamp() {
-//     const updateDateStream = fs.createWriteStream('update-insights.txt', {flags: 'w'});
-//     const TIMESTAMP_DAY = 86400;
-//     const currentTime = parseInt((Date.now() / 1000).toFixed(0))
-//     const timeStamp = currentTime - TIMESTAMP_DAY
-//     updateDateStream.write(timeStamp.toString());
-//     updateDateStream.end();
-// }
-
 // function writeBusinessDiscoveryTimestamp() {
 //     const updateDateStream = fs.createWriteStream('update-business.txt', {flags: 'w'});
 //     const currentTime = parseInt((Date.now() / 1000).toFixed(0))
 
 //     updateDateStream.write(currentTime.toString());
 //     updateDateStream.end();
-// }
-
-// export async function getInsights(lastUpdatedTimestamp) {
-//     const insights = config.instagramConfiguration.insights;
-//     try {
-//         Object.entries(insights).forEach(async ([metric, period]) => {
-//             try {
-//                 const instagramId = config.instagramConfiguration.client.instagramId;
-                
-//                 if(metric == 'audience_city' || metric == 'audience_country' || metric == 'audience_gender_age' || metric == 'audience_locale') {
-//                     return getAperiodicInsight(instagramId, metric, period);       
-//                 }
-//                 getPeriodicInsight(lastUpdatedTimestamp, instagramId, metric, period);
-                
-//             } catch(err) { 
-//                 console.log("Error")
-//                 if(!err.response)
-//                     console.log(err)
-//                 else
-//                     console.error(err.response)
-//             } 
-//         });
-//     } catch(err) {
-//         console.error(err);
-//         console.log("Ocurrio un error en getInsights");
-//     }   
 // }
 
 
