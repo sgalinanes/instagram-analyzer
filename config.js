@@ -1,3 +1,5 @@
+require('dotenv').config('./env')
+
 export const configuration = {
     FACEBOOK_GRAPH_API: "https://graph.facebook.com/v7.0/",
     serverConfiguration: {
@@ -5,7 +7,7 @@ export const configuration = {
     },
     instagramConfiguration: {
         app: {
-            id: procces.env.APP_ID,
+            id: process.env.APP_ID,
             secret: process.env.APP_SECRET,
             longLivedToken: proccess.env.LONG_LIVED_TOKEN
         },
