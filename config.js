@@ -9,7 +9,7 @@ export const configuration = {
         app: {
             id: process.env.APP_ID,
             secret: process.env.APP_SECRET,
-            longLivedToken: proccess.env.LONG_LIVED_TOKEN
+            longLivedToken: process.env.LONG_LIVED_TOKEN
         },
         client: {
             facebookId: process.env.CLIENT_FACEBOOK_ID,
