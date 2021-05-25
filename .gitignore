@@ -1,7 +1,6 @@
 node_modules
 data
 *.sh
-config.js
 analysis
 .vscode
 sheets-automatic-update.js
